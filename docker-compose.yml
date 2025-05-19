@@ -1,26 +1,6 @@
 version: "3.8"
 
 services:
-  mysql:
-    image: mysql:8
-    container_name: mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-     # MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "3307:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
-
-  redis:
-    image: redis:alpine
-    container_name: redis
-    restart: always
-    ports:
-      - "6379:6379"
-
   backend:
     build:
       context: ./backend
@@ -29,14 +9,14 @@ services:
       - "8082:8082"
     environment:
       JWT_SECRET: ${JWT_SECRET}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE} # These are no longer used for connection
+      MYSQL_USER: ${MYSQL_USER}       # but might be used for other config
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD} #
       MAIL_USERNAME: ${MAIL_USERNAME}
       MAIL_PASSWORD: ${MAIL_PASSWORD}
     depends_on:
-      - mysql
-      - redis
+      # - mysql # Removed
+      # - redis # Removed
 
   frontend:
     build:
@@ -48,5 +28,5 @@ services:
     depends_on:
       - backend
 
-volumes:
-  mysql-data:
+# volumes: # Removed as we are using managed services
+#   mysql-data:
