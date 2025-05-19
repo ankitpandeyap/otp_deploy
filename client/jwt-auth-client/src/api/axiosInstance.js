@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 
 
 const axiosInstance = axios.create({
-  baseURL: 'http://localhost:8082/api',
+  baseURL: 'https://otp-deploy.onrender.com/api',
   withCredentials: true,
 });
 
