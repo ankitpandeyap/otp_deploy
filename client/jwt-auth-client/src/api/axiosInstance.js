@@ -28,62 +28,80 @@ axiosInstance.interceptors.request.use(
 
 );
 
+// Define paths where automatic redirect to /login should be suppressed
+// if a token refresh attempt ultimately fails.
+// Ensure these paths match your actual react-router-dom routes.
+const NO_REDIRECT_ON_REFRESH_FAILURE_PATHS = ['/login', '/register'];
+// If you have a separate route like '/verify-otp', add it to the list:
+// const NO_REDIRECT_ON_REFRESH_FAILURE_PATHS = ['/login', '/register', '/verify-otp'];
+
 axiosInstance.interceptors.response.use(
-  (response) => response, // ✅ if successful, just return response
+  (response) => response, // If successful, just return the response
   async (error) => {
     const originalRequest = error.config;
 
-    // If 401, not already retried, and the failing request is NOT the login or refresh token URL
-    if (error.response && error.response.status === 401 && !originalRequest._retry &&
-        originalRequest.url !== '/auth/login' &&
-        originalRequest.url !== '/auth/refresh') { // Crucial: Don't retry if refresh itself failed with 401
-      originalRequest._retry = true;
+    // Check if the error is a 401 Unauthorized,
+    // and it's not a request that has already been retried,
+    // and it's not the login or token refresh API endpoint itself.
+    if (
+      error.response &&
+      error.response.status === 401 &&
+      !originalRequest._retry &&
+      originalRequest.url !== '/auth/login' &&
+      originalRequest.url !== '/auth/refresh'
+    ) {
+      originalRequest._retry = true; // Mark that we're attempting a retry for this request
 
       try {
-        // ⬅️ Try refreshing token
-        const refreshApiResponse = await axiosInstance.post('/auth/refresh',
-          {},
-          { withCredentials: true }
-        );
-
+        // Attempt to refresh the token
+        const refreshApiResponse = await axiosInstance.post('/auth/refresh', {}, { withCredentials: true });
         const authorizationHeader = refreshApiResponse.headers['authorization'];
 
         if (authorizationHeader) {
-          const tokenValue = authorizationHeader.startsWith('Bearer ') ? authorizationHeader.split(' ')[1] : authorizationHeader;
-          localStorage.setItem('accessToken', tokenValue);
+          // New token successfully received
+          const tokenValue = authorizationHeader.startsWith('Bearer ')
+            ? authorizationHeader.split(' ')[1]
+            : authorizationHeader;
 
-          // Update default Authorization header for subsequent requests
+          localStorage.setItem('accessToken', tokenValue);
+          // Update the default Authorization header for subsequent requests
           axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${tokenValue}`;
-          // Update Authorization header for the original request being retried
+          // Update the Authorization header for the original request being retried
           originalRequest.headers['Authorization'] = `Bearer ${tokenValue}`;
 
-          return axiosInstance(originalRequest); // 🔁 Retry the failed request
+          return axiosInstance(originalRequest); // Retry the original request with the new token
         } else {
-          // Refresh API responded 2xx but didn't provide a new token.
-          toast.error('Token refresh successful but no new token received. Please log in again.');
+          // Refresh API responded with success (e.g., 200 OK) but no new token was in the header
+          toast.error('Session update failed (no new token). Please log in again.');
           localStorage.removeItem('accessToken');
-          // Redirect to login. Consider using useNavigate if available in this context.
-          window.location.href = '/login';
-          return Promise.reject(new Error('Token refresh successful but no new token received in headers.'));
+          delete axiosInstance.defaults.headers.common['Authorization']; // Clear stale default token
+
+          // Conditional redirect: Only redirect if not on specified pages
+          if (!NO_REDIRECT_ON_REFRESH_FAILURE_PATHS.includes(window.location.pathname)) {
+            window.location.href = '/login';
+          }
+          return Promise.reject(new Error('Token refresh successful but no new token received.'));
         }
       } catch (refreshError) {
-        // This catch block handles errors from the /auth/refresh call itself
-        // (e.g., network error, or server responds with 4xx/5xx for the refresh call, including another 401)
+        // Token refresh attempt failed (e.g., refresh token is invalid, expired, or a network error occurred)
         let errorMessage = 'Your session has expired. Please log in again.';
         if (refreshError.response && refreshError.response.data && refreshError.response.data.message) {
-            errorMessage = refreshError.response.data.message;
-        } else if (refreshError.message) {
-            // errorMessage = refreshError.message; // Can be too technical
+          errorMessage = refreshError.response.data.message; // Use server's error message if available
         }
         toast.error(errorMessage);
-        localStorage.removeItem('accessToken'); // Clean up
-        window.location.href = '/login';       // Redirect to login
-        return Promise.reject(refreshError);
+        localStorage.removeItem('accessToken');
+        delete axiosInstance.defaults.headers.common['Authorization']; // Clear stale default token
+
+        // Conditional redirect: Only redirect if not on specified pages
+        if (!NO_REDIRECT_ON_REFRESH_FAILURE_PATHS.includes(window.location.pathname)) {
+          window.location.href = '/login';
+        }
+        return Promise.reject(refreshError); // Propagate the error so the calling code can also handle it
       }
     }
 
-    // For errors other than 401, or if it's a 401 for /auth/login or /auth/refresh,
-    // or if the request has already been retried, just reject the promise.
+    // For errors not handled by the refresh logic (e.g., non-401 errors,
+    // or 401s on login/refresh URLs, or if the request was already retried)
     return Promise.reject(error);
   }
 );
