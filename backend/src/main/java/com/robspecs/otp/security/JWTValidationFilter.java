@@ -99,6 +99,7 @@ public class JWTValidationFilter extends OncePerRequestFilter {
 		} catch (ExpiredJwtException e) {
 			request.setAttribute("expiredToken", true);
 			request.setAttribute("expiredTokenUsername", e.getClaims().getSubject());
+			return;
 
 		} catch (JwtException e) {
 			request.setAttribute("custom-error", "JWT parsing error: " + e.getMessage());
