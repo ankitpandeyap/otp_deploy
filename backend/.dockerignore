@@ -1,0 +1,50 @@
+# Build artifacts
+target/
+build/
+*.jar
+*.war
+*.zip
+*.tar.gz
+
+# Maven/Gradle specific files
+.gradle/
+.idea/
+.mvn/
+gradle/
+gradlew
+gradlew.bat
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+release.properties
+
+# STS/Eclipse specific files
+.metadata/
+.recommenders/
+.settings/
+.project
+.classpath
+.factorypath
+.sts4-workspace/
+
+# IntelliJ specific files
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Git
+.git/
+.gitignore
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.swp
+.DS_Store
+Thumbs.db
+
+# Environment variables (if any are stored in files not meant for the image)
+.env
