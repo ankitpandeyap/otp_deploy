@@ -17,12 +17,17 @@ export default function Dashboard() {
   const { logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    logout();
-    toast.success('Logged out successfully');
-    navigate('/login');
+ const handleLogout = async () => {
+    try {
+      await axiosInstance.post("/auth/logout");
+      logout();
+      toast.success("Logged out successfully");
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      toast.error("Logout failed: " + (error.response?.data || "Server error"));
+    }
   };
-
 
   return (
     <div className="dashboard-container">
