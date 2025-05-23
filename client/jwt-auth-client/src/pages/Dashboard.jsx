@@ -4,6 +4,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import '../css/Dashboard.css'
+import axiosInstance from '../api/axiosInstance';
 
 export default function Dashboard() {
   const [token, setToken] = useState('');
