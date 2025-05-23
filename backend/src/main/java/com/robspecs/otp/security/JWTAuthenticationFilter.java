@@ -63,7 +63,7 @@ public class JWTAuthenticationFilter extends OncePerRequestFilter {
 				Cookie refreshCookie = new Cookie("refreshToken", refreshToken);
 				refreshCookie.setHttpOnly(true);
 				refreshCookie.setSecure(false);
-				refreshCookie.setPath("/api/auth/refresh"); // Required for cookie to be sent to all endpoints
+				refreshCookie.setPath("/"); // Required for cookie to be sent to all endpoints
 				refreshCookie.setMaxAge(7 * 24 * 60 * 60);
 				response.addCookie(refreshCookie);
 				response.setContentType("application/json");
